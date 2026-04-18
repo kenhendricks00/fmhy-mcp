@@ -1,0 +1,22 @@
+{
+  "name": "fmhy-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for searching and reading the FMHY single-page dataset from LM Studio.",
+  "main": "src/index.js",
+  "bin": {
+    "fmhy-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "smoke": "node scripts/smoke-test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "turndown": "^7.2.4",
+    "zod": "^4.3.6"
+  }
+}
