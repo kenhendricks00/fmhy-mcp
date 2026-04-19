@@ -75,6 +75,25 @@ function extractLinks(value) {
   return links;
 }
 
+function escapeMarkdownLinkText(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
+}
+
+function formatInlineLinks(links, maxLinks) {
+  const selectedLinks =
+    typeof maxLinks === "number" ? links.slice(0, Math.max(maxLinks, 0)) : links;
+
+  return selectedLinks
+    .map((link) => {
+      const label = escapeMarkdownLinkText(stripMarkdown(link.text) || link.url);
+      return `[${label}](${link.url})`;
+    })
+    .join(" | ");
+}
+
 function deriveEntryTitle(rawLine, links) {
   if (links.length > 0) {
     return links[0].text;
@@ -430,10 +449,7 @@ function formatSearchResults(results, includeUrls) {
       }
 
       if (includeUrls && result.links.length > 0) {
-        const urls = result.links
-          .slice(0, 3)
-          .map((link) => `${link.text}: ${link.url}`)
-          .join(" | ");
+        const urls = formatInlineLinks(result.links, 3);
         lines.push(`   Links: ${urls}`);
       }
 
@@ -449,7 +465,7 @@ function formatLinks(links) {
 
   return links
     .map((entry, index) => {
-      const urls = entry.links.map((link) => `${link.text}: ${link.url}`).join(" | ");
+      const urls = formatInlineLinks(entry.links);
       return `${index + 1}. ${entry.title}\n   Section: ${entry.sectionTitle}\n   Links: ${urls}`;
     })
     .join("\n\n");
