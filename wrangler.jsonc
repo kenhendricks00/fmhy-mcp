@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fmhy-mcp",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-04-21",
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "fmhy-mcp.ken.tools",
+      "custom_domain": true
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "FMHY_CACHE",
+      "id": "b789d1e93a294a1ea52bca9bc9d0b584",
+      "preview_id": "fe208bd507c24d759e4c34edb13a7a04"
+    }
+  ]
+}

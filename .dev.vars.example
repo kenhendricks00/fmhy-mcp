@@ -1,0 +1,4 @@
+FMHY_API_TOKEN=replace-with-a-long-random-token
+ALLOWED_ORIGINS=https://fmhy-mcp.ken.tools
+FMHY_SOURCE_URL=https://api.fmhy.net/single-page
+FMHY_CACHE_TTL_MINUTES=360
