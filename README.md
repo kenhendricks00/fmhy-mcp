@@ -2,7 +2,7 @@
 
 This repository exposes the FMHY single-page dataset at `https://api.fmhy.net/single-page`.
 
-It now supports both:
+It supports both:
 
 - local `stdio` MCP for tools like LM Studio
 - remote `Streamable HTTP` MCP on Cloudflare Workers
@@ -14,6 +14,37 @@ It now supports both:
 - `fmhy_get_links`: find matching FMHY entries and their URLs
 - `fmhy_list_sections`: list section headings for navigation
 - `fmhy_refresh_cache`: force-refresh the cache
+
+## Live hosted endpoint
+
+The current public MCP endpoint is:
+
+- `https://fmhy-mcp.ken.tools/mcp`
+
+The root URL can be used as a quick status check:
+
+- `https://fmhy-mcp.ken.tools/`
+
+This is a `Streamable HTTP` MCP endpoint, not a normal REST API. Direct requests to `/mcp` must use MCP-compatible headers such as `Accept: text/event-stream`.
+
+Example remote MCP config:
+
+```json
+{
+  "url": "https://fmhy-mcp.ken.tools/mcp"
+}
+```
+
+If you later enable bearer auth again, use:
+
+```json
+{
+  "url": "https://fmhy-mcp.ken.tools/mcp",
+  "headers": {
+    "Authorization": "Bearer YOUR_TOKEN"
+  }
+}
+```
 
 ## Local `stdio` usage
 
@@ -78,17 +109,21 @@ Optional environment variables:
 
 ## Cloudflare deployment
 
-Recommended public endpoint:
-
-- `https://fmhy-mcp.ken.tools/mcp`
-
 The Worker entrypoint is [src/worker.mjs](C:/Users/hendricksk4/Downloads/fmhy-mcp/src/worker.mjs). It serves MCP over `Streamable HTTP` and uses Cloudflare KV for cache persistence.
 
-### Files added for Cloudflare
+### Cloudflare files
 
 - [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc)
 - [src/worker.mjs](C:/Users/hendricksk4/Downloads/fmhy-mcp/src/worker.mjs)
 - [.dev.vars.example](C:/Users/hendricksk4/Downloads/fmhy-mcp/.dev.vars.example)
+
+### Current Worker config
+
+- Worker name: `fmhy-mcp`
+- Custom domain: `fmhy-mcp.ken.tools`
+- KV binding: `FMHY_CACHE`
+- KV production namespace ID: `b789d1e93a294a1ea52bca9bc9d0b584`
+- KV preview namespace ID: `fe208bd507c24d759e4c34edb13a7a04`
 
 ### One-time setup
 
@@ -104,42 +139,31 @@ npm install
 npx wrangler login
 ```
 
-3. The main KV namespace ID is already filled into [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) using the value you provided:
+3. Review or update [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) if you are deploying under a different domain or account.
 
-- `b789d1e93a294a1ea52bca9bc9d0b584`
+4. Optional: create `.dev.vars` from [.dev.vars.example](C:/Users/hendricksk4/Downloads/fmhy-mcp/.dev.vars.example) for local Worker testing.
 
-4. Create a preview KV namespace for local `wrangler dev`:
-
-```powershell
-npx wrangler kv namespace create FMHY_CACHE --preview
-```
-
-5. Copy the returned preview namespace ID into [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) for:
-
-- `preview_id`
-
-6. Set the Worker secret for auth:
-
-```powershell
-npx wrangler secret put FMHY_API_TOKEN
-```
-
-Use a long random token. Your MCP client will send it as:
-
-```text
-Authorization: Bearer <your-token>
-```
-
-7. Optionally set non-secret vars in a local `.dev.vars` file for local Worker testing:
+Recommended values:
 
 ```dotenv
-FMHY_API_TOKEN=replace-with-a-long-random-token
 ALLOWED_ORIGINS=https://fmhy-mcp.ken.tools
 FMHY_SOURCE_URL=https://api.fmhy.net/single-page
 FMHY_CACHE_TTL_MINUTES=360
 ```
 
-You can start from [.dev.vars.example](C:/Users/hendricksk4/Downloads/fmhy-mcp/.dev.vars.example).
+5. Optional: add auth by setting a Worker secret:
+
+```powershell
+npx wrangler secret put FMHY_API_TOKEN
+```
+
+If `FMHY_API_TOKEN` is set, clients must send:
+
+```text
+Authorization: Bearer <your-token>
+```
+
+If `FMHY_API_TOKEN` is not set, the remote endpoint is public.
 
 ### Deploy
 
@@ -149,11 +173,7 @@ Deploy the Worker:
 npm run cf:deploy
 ```
 
-The included [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) is already set to attach the Worker to:
-
-- `fmhy-mcp.ken.tools`
-
-After deploy, your MCP endpoint will be:
+After deploy, the endpoint will be:
 
 - `https://fmhy-mcp.ken.tools/mcp`
 
@@ -163,21 +183,34 @@ After deploy, your MCP endpoint will be:
 npm run cf:dev
 ```
 
-### MCP client configuration for remote use
+### Manual endpoint checks
 
-Use your hosted endpoint:
+Root health/info page:
 
-```json
-{
-  "url": "https://fmhy-mcp.ken.tools/mcp",
-  "headers": {
-    "Authorization": "Bearer YOUR_TOKEN"
-  }
+```powershell
+Invoke-WebRequest -Uri "https://fmhy-mcp.ken.tools/"
+```
+
+SSE/MCP transport check:
+
+```powershell
+$headers = @{ Accept = "text/event-stream" }
+Invoke-WebRequest -Uri "https://fmhy-mcp.ken.tools/mcp" -Headers $headers -Method GET
+```
+
+If auth is enabled:
+
+```powershell
+$headers = @{
+  Accept = "text/event-stream"
+  Authorization = "Bearer YOUR_TOKEN"
 }
+Invoke-WebRequest -Uri "https://fmhy-mcp.ken.tools/mcp" -Headers $headers -Method GET
 ```
 
 ### Notes
 
-- If you prefer `api.ken.tools/fmhy-mcp`, update the Worker route and path handling in [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) and [src/worker.mjs](C:/Users/hendricksk4/Downloads/fmhy-mcp/src/worker.mjs).
-- The Worker validates `Origin` when present and supports bearer-token auth through `FMHY_API_TOKEN`.
+- `/mcp` is an MCP transport endpoint, not a normal JSON REST route.
+- If you prefer `api.ken.tools/fmhy-mcp`, update the route in [wrangler.jsonc](C:/Users/hendricksk4/Downloads/fmhy-mcp/wrangler.jsonc) and the path handling in [src/worker.mjs](C:/Users/hendricksk4/Downloads/fmhy-mcp/src/worker.mjs).
+- The Worker validates `Origin` when present.
 - KV is strongly recommended so cache survives cold starts.
